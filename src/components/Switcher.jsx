@@ -37,7 +37,7 @@ export const Switcher = (props) => {
     const [checked, setChecked] = React.useState(false);
     const handleChange = () => {
         setChecked(!checked);
-        props.onClick(props.label, props.array, props.setter)
+        props.onClick(props.label, props.array, props.setter, props.fieldIndex)
         
     };
     return (

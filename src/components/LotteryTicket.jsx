@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import makeStyles from '@mui/styles/makeStyles';
-import Typography from '@material-ui/core/Typography';
-import magicWand from '../logo/magic-wand.svg';
-import { Switcher } from './Switcher';
+import makeStyles from '@mui/styles/makeStyles'
+import Typography from '@material-ui/core/Typography'
+import magicWand from '../logo/magic-wand.svg'
+import { Switcher } from './Switcher'
 
 const useStyles = makeStyles(() => ({
     root: {
@@ -70,51 +70,63 @@ const useStyles = makeStyles(() => ({
         height: '2.6875rem'
     }
 
-}));
+}))
 
 
 
 const LotteryTicket = (props) => {
-    const classes = useStyles();
-    const [firstFieldChecked, setFirstFieldChecked] = useState([])
-    const [secondFieldChecked, setSecondFieldChecked] = useState([])
+    const classes = useStyles()
+    const [checked, setChecked] = useState({ firstField: [], secondField: []})
     const randomedNumbers = { firstField: new Set(), secondField: new Set([])}
     
     const getRandomedArrays = (min, max, num, id) => {
-        if (id === 1) {
+        if (id === '1') {
             while (randomedNumbers.firstField.size < num) {
                 randomedNumbers.firstField.add(Math.floor(min + Math.random() * (max - min)))
             }
-        } else if ( id === 2 ) {
+        } else if ( id === '2' ) {
             while (randomedNumbers.secondField.size < num) {
                 randomedNumbers.secondField.add(Math.floor(min + Math.random() * (max - min)))
             }
         }
-        console.log(randomedNumbers)
     }
     
-    getRandomedArrays(1, 20, 8, 1)
-    getRandomedArrays(1, 3, 1, 2)
+    
 
-    const handleChange = (id, array, setter) => {
-        let newArray = [...array]
-        if (array.includes(id)) {
-            newArray = newArray.filter(value => value !== id);
+    const handleChange = (id, checkedArray, setter, fieldIndex) => {
+        let newArray = [...checkedArray]
+        if (checkedArray.includes(id)) {
+            newArray = newArray.filter(value => value !== id)
         } else {
             newArray.push(id)
         }
-        setter(newArray)
-    };
+        if (fieldIndex === '1') {
+            setter({...checked, firstField: newArray.sort((a, b) => a-b)})
+        }  else {
+            setter({...checked, secondField: newArray})
+        }
+    }
+    
+    const handleSubmit = () => {
+        getRandomedArrays(1, 20, 8, '1')
+        getRandomedArrays(1, 3, 1, '2')
+        console.log(randomedNumbers.firstField, randomedNumbers.secondField)
+        console.log(checked.firstField, checked.secondField)
+
+    }
+
     const firstFields = []
     for (let i = 0; i < 19; i++) {
         firstFields.push(<Switcher label={i+1} key={`$first_${i+1}`} onClick={handleChange} 
-            array={firstFieldChecked} max={8} setter={setFirstFieldChecked}/>);
+            array={checked.firstField} max={8} setter={setChecked} fieldIndex={'1'}/>)
     }
     const secondFields = []
     for (let j = 0; j < 2; j++) {
         secondFields.push(<Switcher label={j+1} key={`second_${j+1}`} onClick={handleChange} 
-            array={secondFieldChecked} max={1} setter={setSecondFieldChecked}/>);
+            array={checked.secondField} max={1} setter={setChecked} fieldIndex={'2'}/>)
     }
+
+    
     return (
         <div className={classes.root}>
             <div className={classes.field}>
@@ -153,13 +165,13 @@ const LotteryTicket = (props) => {
                     </div>
                     <button
                         className={classes.button}
-                        onClick={() => console.log('clicked')}
+                        onClick={handleSubmit}
                     >
                         Показать результат
                     </button>
                 </div>
             </div> 
         </div>
-    );
-};
-export default LotteryTicket;
+    )
+}
+export default LotteryTicket
