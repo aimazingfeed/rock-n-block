@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import makeStyles from '@mui/styles/makeStyles'
 import Typography from '@material-ui/core/Typography'
 import magicWand from '../logo/magic-wand.svg'
 import { Switcher } from './Switcher'
+import axios from 'axios'
 
 const useStyles = makeStyles(() => ({
     root: {
@@ -74,26 +75,47 @@ const useStyles = makeStyles(() => ({
 
 
 
-const LotteryTicket = (props) => {
+const LotteryTicket = () => {
     const classes = useStyles()
     const [checked, setChecked] = useState({ firstField: [], secondField: []})
-    const randomedNumbers = { firstField: new Set(), secondField: new Set([])}
+    const randomedValues = { firstField: new Set(), secondField: new Set([])}
+    const [winningValues, setWinningValues] = useState({ firstField: [], secondField: []})
     
-    const getRandomedArrays = (min, max, num, id) => {
+    const getRandomedArray = (min, max, num, id) => {
         if (id === '1') {
-            while (randomedNumbers.firstField.size < num) {
-                randomedNumbers.firstField.add(Math.floor(min + Math.random() * (max - min)))
+            randomedValues.firstField.clear()
+            while (randomedValues.firstField.size < num) {
+                randomedValues.firstField.add(Math.floor(min + Math.random() * (max - min)))
             }
         } else if ( id === '2' ) {
-            while (randomedNumbers.secondField.size < num) {
-                randomedNumbers.secondField.add(Math.floor(min + Math.random() * (max - min)))
+            randomedValues.secondField.clear()
+            while (randomedValues.secondField.size < num) {
+                randomedValues.secondField.add(Math.floor(min + Math.random() * (max - min)))
             }
         }
     }
     
-    
+    const getWinner = (checkedValues, randomedValues) => {
+        const firstFieldMatches = Array.from(randomedValues.firstField).filter(
+            item => checkedValues.firstField.indexOf(item) !== -1)
+        const firstConditionMatch = firstFieldMatches.length > 3
+        const secondFieldMatches = Array.from(randomedValues.secondField).filter(
+            item => checkedValues.secondField.indexOf(item) !== -1)
+        const secondConditionMatch = firstFieldMatches.length > 2 && secondFieldMatches.length > 0
+        if (firstConditionMatch || secondConditionMatch) {
+            alert('MATCH!!!!!!!!!!')
+            setWinningValues({firstField: firstFieldMatches, secondField: secondFieldMatches})
+            return true
+        } else {
+            alert("It's a pity")
+            setWinningValues({firstField: firstFieldMatches, secondField: secondFieldMatches})
+            return false
+        }
+
+    }
 
     const handleChange = (id, checkedArray, setter, fieldIndex) => {
+        setWinningValues({ firstField: [], secondField: []})
         let newArray = [...checkedArray]
         if (checkedArray.includes(id)) {
             newArray = newArray.filter(value => value !== id)
@@ -106,26 +128,77 @@ const LotteryTicket = (props) => {
             setter({...checked, secondField: newArray})
         }
     }
-    
-    const handleSubmit = () => {
-        getRandomedArrays(1, 20, 8, '1')
-        getRandomedArrays(1, 3, 1, '2')
-        console.log(randomedNumbers.firstField, randomedNumbers.secondField)
-        console.log(checked.firstField, checked.secondField)
 
+    const handleSubmit = async () => {
+        if (checked.firstField.length === 8
+            && checked.secondField.length === 1) {
+                getRandomedArray(1, 20, 8, '1')
+                getRandomedArray(1, 3, 1, '2')
+                const data = {
+                    selectedNumber: { 
+                        firstField: checked.firstField, 
+                        secondField: checked.secondField 
+                    },
+                    isTicketWon: false
+                }
+                data.isTicketWon = getWinner(checked, randomedValues)
+                
+                
+                await sendData({num: 0, data: data})
+            }
+        
+        
     }
-
+    function timeout(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    const sendData = async ({num, data}) => {
+        await timeout(2000)
+        const numRetry = num + 1
+        console.log(data, numRetry)
+        return await axios.post('URL/rock-block', {data}).then(answer => Promise.resolve(answer))
+            .catch(response => {
+                if (numRetry > 2) {
+                    if (response.response) { 
+                        alert('Страница не найдена или истекло время ожидания')
+                    } else if (response.request) { 
+                        alert('Ошибка сети')
+                    }
+                } else {
+                    return sendData({num: numRetry, data: data})
+                } 
+            });
+    }
     const firstFields = []
-    for (let i = 0; i < 19; i++) {
-        firstFields.push(<Switcher label={i+1} key={`$first_${i+1}`} onClick={handleChange} 
-            array={checked.firstField} max={8} setter={setChecked} fieldIndex={'1'}/>)
-    }
     const secondFields = []
-    for (let j = 0; j < 2; j++) {
-        secondFields.push(<Switcher label={j+1} key={`second_${j+1}`} onClick={handleChange} 
-            array={checked.secondField} max={1} setter={setChecked} fieldIndex={'2'}/>)
+    for (let i = 0; i < 19; i++) {
+        firstFields.push(
+            <Switcher 
+                label={i+1}
+                key={`$first_${i+1}`}
+                onClick={handleChange}
+                array={checked.firstField}
+                max={8} setter={setChecked}
+                fieldIndex={'1'}
+                isCorrect={winningValues.firstField.find((item) => i+1 === item)}
+            />)
     }
-
+    for (let j = 0; j < 2; j++) {
+        secondFields.push(
+            <Switcher
+                label={j+1}
+                key={`second_${j+1}`}
+                onClick={handleChange} 
+                array={checked.secondField}
+                max={1}
+                setter={setChecked}
+                fieldIndex={'2'}
+                isCorrect={winningValues.secondField.find((item) => j+1 === item)}
+                
+            />)
+            
+                
+        }
     
     return (
         <div className={classes.root}>
@@ -134,7 +207,8 @@ const LotteryTicket = (props) => {
                     <Typography className={classes.typography}> 
                         Билет 1
                     </Typography>
-                    <img src={magicWand} alt='Magic wand'/>
+                    <img src={magicWand} alt='Magic wand' onClick={() => 
+                        {getRandomedArray(1, 20, 8, '1'), getRandomedArray(1, 3, 1, '2')}}/>
                 </div>
                 <div className={classes.body}>
                     <div className={classes.firstField}>
@@ -143,7 +217,7 @@ const LotteryTicket = (props) => {
                                 Поле 1
                             </Typography>
                             <Typography className={classes.typographySubDescription}>
-                                Отметье 8 чисел
+                                Отметьте 8 чисел
                             </Typography>
                         </div>
                         <div className={classes.subBody}>

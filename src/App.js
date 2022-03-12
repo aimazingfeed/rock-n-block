@@ -1,3 +1,4 @@
+import React from 'react'
 import LotteryTicket from './components/LotteryTicket';
 import './App.css';
 

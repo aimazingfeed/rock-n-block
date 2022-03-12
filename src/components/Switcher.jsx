@@ -32,22 +32,23 @@ const useStyles = makeStyles(() => ({
     }
 }));
 
-export const Switcher = (props) => {
-    const classes = useStyles();
+export const Switcher = ({onClick , label, array, setter, fieldIndex, max, isCorrect}) => {
+    const classes = useStyles()
     const [checked, setChecked] = React.useState(false);
     const handleChange = () => {
         setChecked(!checked);
-        props.onClick(props.label, props.array, props.setter, props.fieldIndex)
+        onClick(label, array, setter, fieldIndex)
         
-    };
+    }
     return (
         <div className={classes.root}>
             <button
-                onClick={e => handleChange(e)}
+                onClick={handleChange}
                 className={checked? classes.checked : classes.unChecked}
-                disabled={props.array.length === props.max && !checked ? 'disabled' :  ''}
+                style={isCorrect ? {background: 'green'} : {}}
+                disabled={array.length === max && !checked ? 'disabled' :  ''}
             >
-                {props.label}
+                {label}
             </button>
         </div>
         
